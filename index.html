@@ -1,0 +1,769 @@
+<title>Rummy Scorekeeper</title>
+<style>
+  :root {
+    --bg: #F5F6F2;
+    --surface: #FFFFFF;
+    --surface-2: #EDEFE9;
+    --ink: #16201B;
+    --muted: #5C6B60;
+    --line: #DCE1D9;
+    --accent: #1F6B4C;
+    --accent-strong: #144935;
+    --accent-soft: #E1EDE6;
+    --gold: #B4893A;
+    --gold-soft: #F3E9D4;
+    --positive: #1F6B4C;
+    --negative: #A13B3B;
+    --shadow: 0 1px 2px rgba(22,32,27,0.06), 0 4px 16px rgba(22,32,27,0.05);
+  }
+  :root[data-theme="dark"] {
+    --bg: #0F1613;
+    --surface: #17211C;
+    --surface-2: #1E2A23;
+    --ink: #ECF2EE;
+    --muted: #93A599;
+    --line: #29352E;
+    --accent: #4CAF82;
+    --accent-strong: #6FC49A;
+    --accent-soft: #1D3128;
+    --gold: #D6AC5C;
+    --gold-soft: #2E2717;
+    --positive: #4CAF82;
+    --negative: #E08585;
+    --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px rgba(0,0,0,0.35);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0F1613;
+      --surface: #17211C;
+      --surface-2: #1E2A23;
+      --ink: #ECF2EE;
+      --muted: #93A599;
+      --line: #29352E;
+      --accent: #4CAF82;
+      --accent-strong: #6FC49A;
+      --accent-soft: #1D3128;
+      --gold: #D6AC5C;
+      --gold-soft: #2E2717;
+      --positive: #4CAF82;
+      --negative: #E08585;
+      --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px rgba(0,0,0,0.35);
+    }
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
+    min-height: 100vh;
+  }
+  .wrap {
+    max-width: 920px;
+    margin: 0 auto;
+    padding: 2.5rem 1.25rem 5rem;
+  }
+  h1, h2, h3 {
+    font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+    font-weight: 600;
+    text-wrap: balance;
+    margin: 0;
+  }
+  .num {
+    font-family: ui-monospace, "SF Mono", "Menlo", "Cascadia Mono", monospace;
+    font-variant-numeric: tabular-nums;
+  }
+  .eyebrow {
+    font-size: 0.72rem;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 600;
+  }
+  button { font: inherit; }
+  input, select, button { font-family: inherit; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* ---------- header ---------- */
+  .app-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+  }
+  .app-header h1 { font-size: 1.7rem; color: var(--ink); }
+  .app-header .eyebrow { margin-bottom: 0.3rem; }
+  .btn {
+    border: 1px solid var(--line);
+    background: var(--surface);
+    color: var(--ink);
+    border-radius: 8px;
+    padding: 0.55rem 1rem;
+    cursor: pointer;
+    font-size: 0.88rem;
+    font-weight: 500;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .btn:hover { border-color: var(--accent); }
+  .btn-primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: white;
+    font-weight: 600;
+  }
+  .btn-primary:hover { background: var(--accent-strong); border-color: var(--accent-strong); }
+  .btn-primary:disabled {
+    background: var(--surface-2);
+    border-color: var(--line);
+    color: var(--muted);
+    cursor: not-allowed;
+  }
+  .btn-ghost {
+    background: transparent;
+    border-color: transparent;
+    color: var(--muted);
+  }
+  .btn-ghost:hover { color: var(--negative); border-color: transparent; background: var(--surface-2); }
+
+  /* ---------- setup ---------- */
+  .setup-card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    box-shadow: var(--shadow);
+    padding: 2.25rem;
+    max-width: 460px;
+    margin: 3rem auto 0;
+  }
+  .setup-card h2 { font-size: 1.35rem; margin-bottom: 0.35rem; }
+  .setup-card .sub { color: var(--muted); font-size: 0.92rem; margin-bottom: 1.75rem; }
+  .field { margin-bottom: 1.1rem; }
+  .field label {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--muted);
+    margin-bottom: 0.4rem;
+  }
+  .field select, .field input[type="text"] {
+    width: 100%;
+    padding: 0.6rem 0.7rem;
+    border-radius: 8px;
+    border: 1px solid var(--line);
+    background: var(--bg);
+    color: var(--ink);
+    font-size: 0.95rem;
+  }
+  .name-grid { display: flex; flex-direction: column; gap: 0.7rem; margin-bottom: 1.5rem; }
+  .name-row { display: flex; align-items: center; gap: 0.6rem; }
+  .name-row .swatch {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: var(--accent); flex: none;
+  }
+  .name-row input { flex: 1; }
+
+  /* ---------- scoreboard ---------- */
+  .scoreboard {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 0.75rem;
+    margin-bottom: 1.75rem;
+  }
+  .score-card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 1rem 1.1rem;
+    box-shadow: var(--shadow);
+    position: relative;
+  }
+  .score-card.lead { border-color: var(--gold); }
+  .score-card .name {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--ink);
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-bottom: 0.5rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .score-card .crown {
+    font-size: 0.7rem;
+    background: var(--gold-soft);
+    color: var(--gold);
+    border-radius: 5px;
+    padding: 0.1rem 0.4rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+  }
+  .score-card .total {
+    font-size: 1.6rem;
+    font-weight: 600;
+  }
+  .total.pos { color: var(--positive); }
+  .total.neg { color: var(--negative); }
+  .total.zero { color: var(--muted); }
+
+  /* ---------- round entry ---------- */
+  .entry {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    box-shadow: var(--shadow);
+    padding: 1.25rem 1.25rem 1.4rem;
+    margin-bottom: 2rem;
+  }
+  .entry-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+  }
+  .entry-head h3 { font-size: 1.02rem; }
+  .entry-table-scroll { overflow-x: auto; }
+  .entry-table { border-collapse: collapse; width: 100%; min-width: 420px; }
+  .entry-table th {
+    text-align: left;
+    font-size: 0.7rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 600;
+    padding: 0 0.6rem 0.5rem 0;
+    white-space: nowrap;
+  }
+  .entry-table td {
+    padding: 0.3rem 0.6rem 0.3rem 0;
+    vertical-align: middle;
+  }
+  .entry-table .player-name {
+    font-weight: 600;
+    padding-right: 1rem;
+    white-space: nowrap;
+    max-width: 140px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .entry-table input[type="number"] {
+    width: 68px;
+    padding: 0.4rem 0.5rem;
+    border-radius: 7px;
+    border: 1px solid var(--line);
+    background: var(--bg);
+    color: var(--ink);
+    font-size: 0.92rem;
+  }
+  .entry-table input[type="number"]:disabled {
+    background: var(--surface-2);
+    color: var(--muted);
+  }
+  .declarer-radio {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px; height: 34px;
+    cursor: pointer;
+  }
+  .declarer-radio input { accent-color: var(--gold); width: 16px; height: 16px; cursor: pointer; }
+  .entry-foot {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    margin-top: 1.1rem;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+  .entry-table td.declarer-hint-cell {
+    font-size: 0.78rem;
+    color: var(--muted);
+    font-weight: 500;
+    white-space: normal;
+    max-width: 170px;
+    line-height: 1.3;
+    padding-right: 1rem;
+  }
+  .declarer-hint-cell b { color: var(--gold); font-weight: 700; }
+
+  /* ---------- history ---------- */
+  .history-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 0.75rem;
+  }
+  .history-head h3 { font-size: 1.02rem; }
+  .history-scroll {
+    overflow-x: auto;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    box-shadow: var(--shadow);
+  }
+  table.history {
+    border-collapse: collapse;
+    width: 100%;
+    min-width: 480px;
+    background: var(--surface);
+  }
+  table.history thead th {
+    position: sticky;
+    top: 0;
+    background: var(--surface-2);
+    text-align: left;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--ink);
+    padding: 0.75rem 0.9rem;
+    border-bottom: 1px solid var(--line);
+    white-space: nowrap;
+  }
+  table.history thead th.round-col { width: 64px; }
+  table.history tbody td {
+    padding: 0.7rem 0.9rem;
+    border-bottom: 1px solid var(--line);
+    vertical-align: top;
+  }
+  table.history tbody tr:last-child td { border-bottom: none; }
+  table.history tbody tr.history-row { cursor: pointer; }
+  table.history tbody tr:hover { background: var(--surface-2); }
+  .round-num { color: var(--muted); font-size: 0.85rem; }
+  .round-num .chevron {
+    display: inline-block;
+    margin-left: 0.4rem;
+    font-size: 0.65rem;
+    color: var(--muted);
+  }
+  .cell-breakdown {
+    font-size: 0.72rem;
+    color: var(--muted);
+    margin-bottom: 0.25rem;
+  }
+  .cell-round {
+    font-size: 0.95rem;
+    font-weight: 600;
+  }
+  .cell-running {
+    font-size: 0.78rem;
+    color: var(--muted);
+    margin-top: 0.15rem;
+  }
+  .chip-declarer {
+    display: inline-block;
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    color: var(--gold);
+    background: var(--gold-soft);
+    border-radius: 5px;
+    padding: 0.05rem 0.35rem;
+    margin-left: 0.35rem;
+    vertical-align: middle;
+  }
+  .row-actions { text-align: right; white-space: nowrap; }
+  .icon-btn {
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 0.95rem;
+    padding: 0.3rem 0.45rem;
+    border-radius: 6px;
+    line-height: 1;
+  }
+  .icon-btn:hover { color: var(--negative); background: var(--surface); }
+  .empty-state {
+    padding: 2rem;
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.9rem;
+  }
+
+  .footer-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 1rem;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .score-card, .btn { transition: box-shadow 0.15s, border-color 0.15s, background 0.15s; }
+  }
+</style>
+
+<div class="wrap" id="app"></div>
+
+<script>
+(function () {
+  var state = {
+    players: [],        // ["Alice", "Bob", "Charlie"]
+    rounds: [],          // [{ declarer: idx, values: [..], penalties: [..] }]
+    setupCount: 3
+  };
+
+  var app = document.getElementById('app');
+
+  function el(tag, attrs, children) {
+    var e = document.createElement(tag);
+    attrs = attrs || {};
+    for (var k in attrs) {
+      if (k === 'class') e.className = attrs[k];
+      else if (k === 'html') e.innerHTML = attrs[k];
+      else if (k.indexOf('on') === 0) e.addEventListener(k.slice(2), attrs[k]);
+      else e.setAttribute(k, attrs[k]);
+    }
+    (children || []).forEach(function (c) {
+      if (c == null) return;
+      e.appendChild(typeof c === 'string' ? document.createTextNode(c) : c);
+    });
+    return e;
+  }
+
+  function fmt(n) {
+    n = Math.round(n * 100) / 100;
+    var sign = n > 0 ? '+' : '';
+    return sign + n;
+  }
+
+  function signClass(n) {
+    if (n > 0) return 'pos';
+    if (n < 0) return 'neg';
+    return 'zero';
+  }
+
+  // ---------- scoring engine ----------
+  function computeRoundScores(round, n) {
+    var totalValue = 0, nonDeclarerPenaltySum = 0;
+    for (var i = 0; i < n; i++) {
+      totalValue += round.values[i];
+      if (i !== round.declarer) nonDeclarerPenaltySum += round.penalties[i];
+    }
+    var scores = [];
+    for (var j = 0; j < n; j++) {
+      var base = (j === round.declarer) ? nonDeclarerPenaltySum : -round.penalties[j];
+      var netValue = round.values[j] * n - totalValue;
+      scores.push(base + netValue);
+    }
+    return scores;
+  }
+
+  function computeRunningTotals() {
+    var n = state.players.length;
+    var running = new Array(n).fill(0);
+    var perRound = state.rounds.map(function (round) {
+      var scores = computeRoundScores(round, n);
+      scores.forEach(function (s, i) { running[i] += s; });
+      return { scores: scores, running: running.slice() };
+    });
+    return { perRound: perRound, totals: running };
+  }
+
+  // ---------- render: setup ----------
+  function renderSetup() {
+    app.innerHTML = '';
+
+    var header = el('div', { class: 'app-header' }, [
+      el('div', {}, [
+        el('div', { class: 'eyebrow' }, ['Score tracker']),
+        el('h1', {}, ['Rummy'])
+      ])
+    ]);
+
+    var card = el('div', { class: 'setup-card' });
+    card.appendChild(el('h2', {}, ['New game']));
+    card.appendChild(el('div', { class: 'sub' }, ['Set the table, then keep score round by round.']));
+
+    var countField = el('div', { class: 'field' });
+    countField.appendChild(el('label', {}, ['Number of players']));
+    var select = el('select', {
+      onchange: function (e) {
+        state.setupCount = parseInt(e.target.value, 10);
+        renderSetup();
+      }
+    });
+    for (var i = 2; i <= 8; i++) {
+      var opt = el('option', { value: i }, [i + ' players']);
+      if (i === state.setupCount) opt.setAttribute('selected', 'selected');
+      select.appendChild(opt);
+    }
+    countField.appendChild(select);
+    card.appendChild(countField);
+
+    var nameGrid = el('div', { class: 'name-grid' });
+    var names = [];
+    for (var p = 0; p < state.setupCount; p++) {
+      names.push(state.players[p] || '');
+    }
+    names.forEach(function (val, idx) {
+      var input = el('input', {
+        type: 'text',
+        placeholder: 'Player ' + (idx + 1) + ' name',
+        value: val,
+        oninput: function (e) {
+          names[idx] = e.target.value;
+          checkReady();
+        }
+      });
+      var row = el('div', { class: 'name-row' }, [
+        el('div', { class: 'swatch' }),
+        input
+      ]);
+      nameGrid.appendChild(row);
+    });
+    card.appendChild(nameGrid);
+
+    var startBtn = el('button', { class: 'btn btn-primary', style: 'width:100%;' }, ['Start game']);
+    startBtn.disabled = true;
+    startBtn.addEventListener('click', function () {
+      state.players = names.map(function (n) { return n.trim(); });
+      state.rounds = [];
+      renderGame();
+    });
+    card.appendChild(startBtn);
+
+    function checkReady() {
+      var ready = names.every(function (n) { return n.trim().length > 0; });
+      startBtn.disabled = !ready;
+      startBtn.style.opacity = ready ? '1' : '0.7';
+    }
+    checkReady();
+
+    app.appendChild(header);
+    app.appendChild(card);
+  }
+
+  // ---------- render: game ----------
+  var draft = null; // { declarer, values, penalties }
+  var roundIdCounter = 0;
+  var expandedRounds = {};
+
+  function freshDraft(n) {
+    return {
+      declarer: null,
+      values: new Array(n).fill(''),
+      penalties: new Array(n).fill('')
+    };
+  }
+
+  function toNum(v) {
+    var f = parseFloat(v);
+    return isNaN(f) ? 0 : f;
+  }
+
+  function renderGame() {
+    app.innerHTML = '';
+    var n = state.players.length;
+    if (!draft || draft.values.length !== n) draft = freshDraft(n);
+
+    var result = computeRunningTotals();
+    var totals = result.totals;
+    var maxTotal = state.rounds.length ? Math.max.apply(null, totals) : null;
+
+    // header
+    var header = el('div', { class: 'app-header' }, [
+      el('div', {}, [
+        el('div', { class: 'eyebrow' }, ['Score tracker']),
+        el('h1', {}, ['Rummy'])
+      ]),
+      el('button', {
+        class: 'btn btn-ghost',
+        onclick: function () {
+          if (confirm('Start a new game? Current scores will be lost.')) {
+            state.rounds = [];
+            state.players = [];
+            draft = null;
+            renderSetup();
+          }
+        }
+      }, ['New game'])
+    ]);
+    app.appendChild(header);
+
+    // scoreboard
+    var board = el('div', { class: 'scoreboard' });
+    state.players.forEach(function (name, i) {
+      var isLead = state.rounds.length > 0 && totals[i] === maxTotal && maxTotal !== 0;
+      var card = el('div', { class: 'score-card' + (isLead ? ' lead' : '') }, [
+        el('div', { class: 'name' }, [
+          name,
+          isLead ? el('span', { class: 'crown' }, ['LEAD']) : null
+        ]),
+        el('div', { class: 'total num ' + signClass(totals[i]) }, [fmt(totals[i])])
+      ]);
+      board.appendChild(card);
+    });
+    app.appendChild(board);
+
+    // round entry
+    var entry = el('div', { class: 'entry' });
+    entry.appendChild(el('div', { class: 'entry-head' }, [
+      el('h3', {}, ['Round ' + (state.rounds.length + 1)])
+    ]));
+
+    var scrollWrap = el('div', { class: 'entry-table-scroll' });
+    var table = el('table', { class: 'entry-table' });
+    var thead = el('thead');
+    var headRow = el('tr', {}, [el('th', {}, ['Declared'])]);
+    state.players.forEach(function (name) { headRow.appendChild(el('th', {}, [name])); });
+    thead.appendChild(headRow);
+    table.appendChild(thead);
+
+    var tbody = el('tbody');
+
+    // declarer row
+    var declarerHint = draft.declarer === null
+      ? el('span', {}, ['Mark who declared this round.'])
+      : el('span', {}, [el('b', {}, [state.players[draft.declarer]]), ' declared this round.']);
+    var declarerRow = el('tr', {}, [el('td', { class: 'declarer-hint-cell' }, [declarerHint])]);
+    state.players.forEach(function (name, i) {
+      var radio = el('input', {
+        type: 'radio',
+        name: 'declarer',
+        onchange: function () {
+          draft.declarer = i;
+          draft.penalties[i] = '';
+          renderGame();
+        }
+      });
+      if (draft.declarer === i) radio.checked = true;
+      var label = el('label', { class: 'declarer-radio' }, [radio]);
+      declarerRow.appendChild(el('td', {}, [label]));
+    });
+    tbody.appendChild(declarerRow);
+
+    // value row
+    var valueRow = el('tr', {}, [el('td', { class: 'player-name' }, ['Value'])]);
+    state.players.forEach(function (name, i) {
+      var input = el('input', {
+        type: 'number', min: '0', step: '1', placeholder: '0',
+        value: draft.values[i],
+        oninput: function (e) {
+          draft.values[i] = e.target.value;
+        }
+      });
+      valueRow.appendChild(el('td', {}, [input]));
+    });
+    tbody.appendChild(valueRow);
+
+    // penalty row
+    var penaltyRow = el('tr', {}, [el('td', { class: 'player-name' }, ['Penalty'])]);
+    state.players.forEach(function (name, i) {
+      var isDeclarer = draft.declarer === i;
+      var input = el('input', {
+        type: 'number', min: '0', step: '1', placeholder: '0',
+        value: isDeclarer ? '0' : draft.penalties[i],
+        oninput: function (e) {
+          draft.penalties[i] = e.target.value;
+        }
+      });
+      if (isDeclarer) input.disabled = true;
+      penaltyRow.appendChild(el('td', {}, [input]));
+    });
+    tbody.appendChild(penaltyRow);
+
+    table.appendChild(tbody);
+    scrollWrap.appendChild(table);
+    entry.appendChild(scrollWrap);
+
+    var foot = el('div', { class: 'entry-foot' });
+    var addBtn = el('button', { class: 'btn btn-primary' }, ['Add round']);
+    addBtn.disabled = draft.declarer === null;
+    addBtn.addEventListener('click', function () {
+      state.rounds.push({
+        id: ++roundIdCounter,
+        declarer: draft.declarer,
+        values: draft.values.map(toNum),
+        penalties: draft.penalties.map(toNum)
+      });
+      draft = freshDraft(n);
+      renderGame();
+    });
+    foot.appendChild(addBtn);
+    entry.appendChild(foot);
+    app.appendChild(entry);
+
+    // history
+    var historyHead = el('div', { class: 'history-head' }, [
+      el('h3', {}, ['Score history'])
+    ]);
+    app.appendChild(historyHead);
+
+    if (state.rounds.length === 0) {
+      var scroll = el('div', { class: 'history-scroll' }, [
+        el('div', { class: 'empty-state' }, ['No rounds recorded yet. Add your first round above.'])
+      ]);
+      app.appendChild(scroll);
+      return;
+    }
+
+    var histScroll = el('div', { class: 'history-scroll' });
+    var histTable = el('table', { class: 'history' });
+    var hHead = el('thead');
+    var hHeadRow = el('tr', {}, [el('th', { class: 'round-col' }, ['Round'])]);
+    state.players.forEach(function (name) { hHeadRow.appendChild(el('th', {}, [name])); });
+    hHeadRow.appendChild(el('th', {}, ['']));
+    hHead.appendChild(hHeadRow);
+    histTable.appendChild(hHead);
+
+    var hBody = el('tbody');
+    state.rounds.forEach(function (round, rIdx) {
+      var pr = result.perRound[rIdx];
+      var isExpanded = !!expandedRounds[round.id];
+      var tr = el('tr', {
+        class: 'history-row' + (isExpanded ? ' expanded' : ''),
+        onclick: function () {
+          expandedRounds[round.id] = !isExpanded;
+          renderGame();
+        }
+      }, [
+        el('td', { class: 'round-num' }, [
+          String(rIdx + 1),
+          el('span', { class: 'chevron' }, [isExpanded ? '▾' : '▸'])
+        ])
+      ]);
+      state.players.forEach(function (name, i) {
+        var isDeclarer = round.declarer === i;
+        var cellChildren;
+        if (isExpanded) {
+          cellChildren = [
+            el('div', { class: 'cell-breakdown' }, [
+              'Value ' + round.values[i] + ' · Penalty ' + round.penalties[i]
+            ]),
+            el('div', { class: 'cell-round num ' + signClass(pr.scores[i]) }, [
+              fmt(pr.scores[i]),
+              isDeclarer ? el('span', { class: 'chip-declarer' }, ['DECL']) : null
+            ]),
+            el('div', { class: 'cell-running num' }, ['total ' + fmt(pr.running[i])])
+          ];
+        } else {
+          cellChildren = [
+            el('div', { class: 'cell-round num ' + signClass(pr.scores[i]) }, [
+              fmt(pr.scores[i]),
+              isDeclarer ? el('span', { class: 'chip-declarer' }, ['DECL']) : null
+            ])
+          ];
+        }
+        tr.appendChild(el('td', {}, cellChildren));
+      });
+      var delBtn = el('button', {
+        class: 'icon-btn', title: 'Delete round ' + (rIdx + 1),
+        onclick: function (e) {
+          e.stopPropagation();
+          state.rounds.splice(rIdx, 1);
+          renderGame();
+        }
+      }, ['✕']);
+      tr.appendChild(el('td', { class: 'row-actions' }, [delBtn]));
+      hBody.appendChild(tr);
+    });
+    histTable.appendChild(hBody);
+    histScroll.appendChild(histTable);
+    app.appendChild(histScroll);
+  }
+
+  renderSetup();
+})();
+</script>
