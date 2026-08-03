@@ -1,58 +1,22 @@
 <script setup lang="ts">
-import GameSetup from '@/components/GameSetup.vue'
-import RoundEntry from '@/components/RoundEntry.vue'
-import ScoreBoard from '@/components/ScoreBoard.vue'
-import ScoreHistory from '@/components/ScoreHistory.vue'
-import { useGame } from '@/composables/useGame'
+import { useRoute } from 'vue-router'
 
-const {
-  players,
-  rounds,
-  hasGame,
-  totals,
-  perRound,
-  leadingTotal,
-  startGame,
-  addRound,
-  deleteRound,
-  resetGame,
-} = useGame()
-
-function confirmReset() {
-  if (window.confirm('Start a new game? Current scores will be lost.')) {
-    resetGame()
-  }
-}
+const route = useRoute()
 </script>
 
 <template>
   <div class="wrap">
     <header class="app-header">
-      <div>
+      <RouterLink class="brand" to="/">
         <p class="eyebrow">Score tracker</p>
         <h1>Rummy</h1>
-      </div>
-      <button v-if="hasGame" class="btn btn-ghost" type="button" @click="confirmReset">
+      </RouterLink>
+      <RouterLink v-if="route.name === 'game'" class="btn btn-ghost" to="/">
         New game
-      </button>
+      </RouterLink>
     </header>
 
-    <GameSetup v-if="!hasGame" @start="startGame" />
-
-    <template v-else>
-      <ScoreBoard :players="players" :totals="totals" :leading-total="leadingTotal" />
-      <RoundEntry
-        :players="players"
-        :round-number="rounds.length + 1"
-        @add="addRound"
-      />
-      <ScoreHistory
-        :players="players"
-        :rounds="rounds"
-        :per-round="perRound"
-        @delete="deleteRound"
-      />
-    </template>
+    <RouterView />
   </div>
 </template>
 
@@ -70,6 +34,11 @@ function confirmReset() {
   gap: 1rem;
   margin-bottom: 2rem;
   flex-wrap: wrap;
+}
+
+.brand {
+  text-decoration: none;
+  color: inherit;
 }
 
 .app-header h1 {

@@ -9,11 +9,11 @@ defineProps<{
   perRound: RoundResult[]
 }>()
 
-const emit = defineEmits<{ delete: [id: number] }>()
+const emit = defineEmits<{ delete: [id: string] }>()
 
-const expanded = ref<Set<number>>(new Set())
+const expanded = ref<Set<string>>(new Set())
 
-function toggle(id: number) {
+function toggle(id: string) {
   const next = new Set(expanded.value)
   if (next.has(id)) next.delete(id)
   else next.add(id)

@@ -1,20 +1,25 @@
-import { computed, ref } from 'vue'
+import { computed, onUnmounted, ref } from 'vue'
+import * as api from '@/lib/api'
 import { computeGame } from '@/lib/scoring'
 import type { Round } from '@/types'
 
+/** How often to pick up rounds added by other people on the same link. */
+const POLL_INTERVAL_MS = 5000
+
 /**
- * Owns all game state. Every mutation funnels through the actions below, so
- * adding persistence later means writing to a backend inside these functions
- * rather than touching any component.
+ * Owns one game's state and every mutation against it. The server is the source
+ * of truth: mutations post, then apply the server's response.
  */
-export function useGame() {
+export function useGame(gameId: string) {
   const players = ref<string[]>([])
   const rounds = ref<Round[]>([])
-  let nextRoundId = 1
+
+  const loading = ref(true)
+  const saving = ref(false)
+  const error = ref<string | null>(null)
+  const notFound = ref(false)
 
   const playerCount = computed(() => players.value.length)
-  const hasGame = computed(() => players.value.length > 0)
-
   const game = computed(() => computeGame(rounds.value, playerCount.value))
   const totals = computed(() => game.value.totals)
   const perRound = computed(() => game.value.perRound)
@@ -26,37 +31,97 @@ export function useGame() {
     return max === 0 ? null : max
   })
 
-  function startGame(names: string[]) {
-    players.value = names.map((name) => name.trim())
-    rounds.value = []
-    nextRoundId = 1
+  function apply(data: api.GameData) {
+    players.value = data.seats
+    rounds.value = data.rounds
   }
 
-  function addRound(round: Omit<Round, 'id'>) {
-    rounds.value.push({ ...round, id: nextRoundId++ })
+  async function load() {
+    loading.value = true
+    error.value = null
+    try {
+      apply(await api.fetchGame(gameId))
+    } catch (err) {
+      if (err instanceof api.ApiError && err.status === 404) notFound.value = true
+      else error.value = err instanceof Error ? err.message : 'Could not load this game.'
+    } finally {
+      loading.value = false
+    }
   }
 
-  function deleteRound(id: number) {
-    rounds.value = rounds.value.filter((round) => round.id !== id)
+  /** Background refresh. Stays quiet on failure so a blip does not disrupt play. */
+  async function refresh() {
+    if (saving.value || notFound.value) return
+    try {
+      apply(await api.fetchGame(gameId))
+    } catch {
+      /* transient — the next poll will retry */
+    }
   }
 
-  function resetGame() {
-    players.value = []
-    rounds.value = []
-    nextRoundId = 1
+  async function addRound(round: Omit<Round, 'id'>) {
+    saving.value = true
+    error.value = null
+    try {
+      rounds.value = [...rounds.value, await api.addRound(gameId, round)]
+      return true
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : 'Could not save that round.'
+      return false
+    } finally {
+      saving.value = false
+    }
   }
+
+  async function deleteRound(roundId: string) {
+    const previous = rounds.value
+    // Optimistic: deletion is unambiguous, and reverting is cheap if it fails.
+    rounds.value = rounds.value.filter((round) => round.id !== roundId)
+    saving.value = true
+    try {
+      await api.deleteRound(gameId, roundId)
+    } catch (err) {
+      rounds.value = previous
+      error.value = err instanceof Error ? err.message : 'Could not delete that round.'
+    } finally {
+      saving.value = false
+    }
+  }
+
+  function dismissError() {
+    error.value = null
+  }
+
+  const timer = window.setInterval(() => {
+    if (document.visibilityState === 'visible') void refresh()
+  }, POLL_INTERVAL_MS)
+
+  // A sleeping phone misses polls entirely, so catch up on wake.
+  function onVisible() {
+    if (document.visibilityState === 'visible') void refresh()
+  }
+  document.addEventListener('visibilitychange', onVisible)
+
+  onUnmounted(() => {
+    window.clearInterval(timer)
+    document.removeEventListener('visibilitychange', onVisible)
+  })
+
+  void load()
 
   return {
     players,
     rounds,
-    playerCount,
-    hasGame,
+    loading,
+    saving,
+    error,
+    notFound,
     totals,
     perRound,
     leadingTotal,
-    startGame,
     addRound,
     deleteRound,
-    resetGame,
+    dismissError,
+    reload: load,
   }
 }

@@ -9,3 +9,6 @@ dist-ssr
 *.log
 .vite
 coverage
+
+# Local D1 state created by wrangler dev
+.wrangler

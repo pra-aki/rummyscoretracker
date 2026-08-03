@@ -1,7 +1,7 @@
 /** A single completed round. Only raw inputs are stored — scores are always
  *  recomputed, so a scoring fix retroactively corrects historical games. */
 export interface Round {
-  id: number
+  id: string
   /** Seat index of the player who declared this round. */
   declarer: number
   /** Per-seat hand value. */

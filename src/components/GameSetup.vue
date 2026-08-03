@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 
+const props = defineProps<{ busy?: boolean; error?: string | null }>()
+
 const emit = defineEmits<{ start: [names: string[]] }>()
 
 const MIN_PLAYERS = 2
@@ -23,7 +25,7 @@ watch(count, (next) => {
 const ready = computed(() => names.value.every((name) => name.trim().length > 0))
 
 function start() {
-  if (!ready.value) return
+  if (!ready.value || props.busy) return
   emit('start', names.value)
 }
 </script>
@@ -53,8 +55,10 @@ function start() {
         </div>
       </div>
 
-      <button class="btn btn-primary start" type="submit" :disabled="!ready">
-        Start game
+      <p v-if="error" class="setup-error" role="alert">{{ error }}</p>
+
+      <button class="btn btn-primary start" type="submit" :disabled="!ready || busy">
+        {{ busy ? 'Starting…' : 'Start game' }}
       </button>
     </form>
   </div>
@@ -133,5 +137,11 @@ input[type='text'] {
 
 .start {
   width: 100%;
+}
+
+.setup-error {
+  color: var(--negative);
+  font-size: 0.85rem;
+  margin: 0 0 0.9rem;
 }
 </style>

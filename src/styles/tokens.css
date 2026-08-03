@@ -135,6 +135,17 @@ h3 {
   cursor: not-allowed;
 }
 
+.btn-danger {
+  background: var(--negative);
+  border-color: var(--negative);
+  color: #fff;
+  font-weight: 600;
+}
+
+.btn-danger:hover {
+  filter: brightness(0.93);
+}
+
 .btn-ghost {
   background: transparent;
   border-color: transparent;

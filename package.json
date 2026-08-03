@@ -5,20 +5,26 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vue-tsc --noEmit && vite build",
-    "preview": "vite preview",
+    "dev:api": "wrangler pages dev dist --port 8788",
+    "build": "vue-tsc --noEmit && tsc -p functions/tsconfig.json --noEmit && vite build",
+    "preview": "npm run build && wrangler pages dev dist --port 8788",
+    "db:local": "wrangler d1 execute rummy --local --file=./schema.sql",
+    "db:remote": "wrangler d1 execute rummy --remote --file=./schema.sql",
     "test": "vitest run",
     "test:watch": "vitest"
   },
   "dependencies": {
-    "vue": "^3.5.13"
+    "vue": "^3.5.13",
+    "vue-router": "^4.6.4"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260801.1",
     "@types/node": "^26.1.2",
     "@vitejs/plugin-vue": "^6.0.0",
     "typescript": "~5.9.2",
     "vite": "^7.0.0",
     "vitest": "^3.2.4",
-    "vue-tsc": "^3.0.0"
+    "vue-tsc": "^3.0.0",
+    "wrangler": "^4.118.0"
   }
 }

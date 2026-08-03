@@ -3,7 +3,7 @@ import { computeGame, computeRoundScores, formatScore, toNum } from './scoring'
 import type { Round } from '@/types'
 
 const round = (over: Partial<Round> = {}): Round => ({
-  id: 1,
+  id: 'r1',
   declarer: 0,
   values: [0, 0, 0],
   penalties: [0, 0, 0],
@@ -59,8 +59,8 @@ describe('computeGame', () => {
   it('carries running totals across rounds', () => {
     const { perRound, totals } = computeGame(
       [
-        round({ id: 1, declarer: 2, values: [2, 3, 1], penalties: [3, 5, 0] }),
-        round({ id: 2, declarer: 0, values: [0, 0, 0], penalties: [0, 4, 6] }),
+        round({ id: 'r1', declarer: 2, values: [2, 3, 1], penalties: [3, 5, 0] }),
+        round({ id: 'r2', declarer: 0, values: [0, 0, 0], penalties: [0, 4, 6] }),
       ],
       3,
     )
@@ -78,8 +78,8 @@ describe('computeGame', () => {
   it('keeps each round’s running snapshot independent', () => {
     const { perRound } = computeGame(
       [
-        round({ id: 1, declarer: 0, values: [0, 0, 0], penalties: [0, 2, 2] }),
-        round({ id: 2, declarer: 0, values: [0, 0, 0], penalties: [0, 2, 2] }),
+        round({ id: 'r1', declarer: 0, values: [0, 0, 0], penalties: [0, 2, 2] }),
+        round({ id: 'r2', declarer: 0, values: [0, 0, 0], penalties: [0, 2, 2] }),
       ],
       3,
     )

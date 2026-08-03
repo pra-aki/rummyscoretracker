@@ -1,0 +1,11 @@
+name = "rummyscoretracker"
+pages_build_output_dir = "dist"
+compatibility_date = "2025-01-01"
+
+# Created with: npx wrangler d1 create rummy
+# Paste the returned database_id below, and add the same binding in the
+# Cloudflare dashboard under Settings → Functions → D1 database bindings.
+[[d1_databases]]
+binding = "DB"
+database_name = "rummy"
+database_id = "PLACEHOLDER_RUN_WRANGLER_D1_CREATE"

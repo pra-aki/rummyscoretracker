@@ -6,6 +6,7 @@ import type { Round, RoundDraft } from '@/types'
 const props = defineProps<{
   players: string[]
   roundNumber: number
+  busy?: boolean
 }>()
 
 const emit = defineEmits<{ add: [round: Omit<Round, 'id'>] }>()
@@ -33,14 +34,28 @@ function selectDeclarer(index: number) {
   draft.value.penalties[index] = ''
 }
 
+// Set while our own submission is in flight, so the draft is cleared only when
+// that submission lands — not when polling picks up someone else's round, and
+// not if the save fails.
+const awaitingOwnSave = ref(false)
+
+watch(
+  () => props.roundNumber,
+  () => {
+    if (!awaitingOwnSave.value) return
+    awaitingOwnSave.value = false
+    draft.value = freshDraft(props.players.length)
+  },
+)
+
 function submit() {
-  if (draft.value.declarer === null) return
+  if (draft.value.declarer === null || props.busy) return
+  awaitingOwnSave.value = true
   emit('add', {
     declarer: draft.value.declarer,
     values: draft.value.values.map(toNum),
     penalties: draft.value.penalties.map(toNum),
   })
-  draft.value = freshDraft(props.players.length)
 }
 </script>
 
@@ -117,10 +132,10 @@ function submit() {
       <button
         class="btn btn-primary"
         type="button"
-        :disabled="draft.declarer === null"
+        :disabled="draft.declarer === null || busy"
         @click="submit"
       >
-        Add round
+        {{ busy ? 'Saving…' : 'Add round' }}
       </button>
     </footer>
   </section>
