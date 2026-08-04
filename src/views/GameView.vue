@@ -5,6 +5,7 @@ import ScoreBoard from '@/components/ScoreBoard.vue'
 import ScoreHistory from '@/components/ScoreHistory.vue'
 import ShareLink from '@/components/ShareLink.vue'
 import { useGame } from '@/composables/useGame'
+import type { Round } from '@/types'
 
 const props = defineProps<{ id: string }>()
 
@@ -25,6 +26,13 @@ const {
 } = useGame(props.id)
 
 const confirmingDelete = ref<string | null>(null)
+const history = ref<InstanceType<typeof ScoreHistory> | null>(null)
+
+/** Add the round, then bring its freshly calculated scores into view. */
+async function submitRound(round: Omit<Round, 'id'>) {
+  const created = await addRound(round)
+  if (created) history.value?.scrollToRound(created.id)
+}
 
 function requestDelete(roundId: string) {
   confirmingDelete.value = roundId
@@ -65,10 +73,11 @@ async function confirmDelete() {
       :players="players"
       :round-number="rounds.length + 1"
       :busy="saving"
-      @add="addRound"
+      @add="submitRound"
     />
 
     <ScoreHistory
+      ref="history"
       :players="players"
       :rounds="rounds"
       :per-round="perRound"

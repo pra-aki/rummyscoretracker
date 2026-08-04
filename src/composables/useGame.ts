@@ -81,18 +81,20 @@ export function useGame(gameId: string) {
     }
   }
 
-  async function addRound(round: Omit<Round, 'id'>) {
+  /** Returns the created round, or null if the save failed. */
+  async function addRound(round: Omit<Round, 'id'>): Promise<Round | null> {
     saving.value = true
     error.value = null
     try {
-      rounds.value = [...rounds.value, await api.addRound(gameId, round)]
+      const created = await api.addRound(gameId, round)
+      rounds.value = [...rounds.value, created]
       // Our write moved the server's version, so the next poll reconciles and
       // picks up anything the others added meanwhile. Go back to fast polling.
       quicken()
-      return true
+      return created
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Could not save that round.'
-      return false
+      return null
     } finally {
       saving.value = false
     }
