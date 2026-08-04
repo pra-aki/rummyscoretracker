@@ -1,10 +1,14 @@
-name = "rummyscoretracker"
+name = "rummy"
 main = "./dist/_worker.js"
 compatibility_date = "2025-01-01"
 
 [assets]
 directory = "./dist"
 binding = "ASSETS"
+# Serve index.html for paths with no matching file, so shared links like
+# /game/<id> reach the router instead of 404ing. Pages did this implicitly;
+# Workers needs it stated.
+not_found_handling = "single-page-application"
 
 [[d1_databases]]
 binding = "DB"
