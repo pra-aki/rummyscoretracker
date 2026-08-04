@@ -3,8 +3,15 @@ import * as api from '@/lib/api'
 import { computeGame } from '@/lib/scoring'
 import type { Round } from '@/types'
 
-/** How often to pick up rounds added by other people on the same link. */
-const POLL_INTERVAL_MS = 5000
+/**
+ * Polling cadence for picking up rounds added by other people on the same link.
+ *
+ * A rummy round takes minutes to play, so polling every 5s forever spends
+ * requests on nothing. The interval starts fast, doubles while the game is
+ * quiet, and drops straight back to the floor the moment anything happens.
+ */
+const MIN_POLL_MS = 5000
+const MAX_POLL_MS = 30000
 
 /**
  * Owns one game's state and every mutation against it. The server is the source
@@ -31,9 +38,13 @@ export function useGame(gameId: string) {
     return max === 0 ? null : max
   })
 
+  /** Server's updated_at as of our last full fetch. */
+  let lastSeenVersion = 0
+
   function apply(data: api.GameData) {
     players.value = data.seats
     rounds.value = data.rounds
+    lastSeenVersion = data.updatedAt
   }
 
   async function load() {
@@ -49,13 +60,24 @@ export function useGame(gameId: string) {
     }
   }
 
-  /** Background refresh. Stays quiet on failure so a blip does not disrupt play. */
-  async function refresh() {
-    if (saving.value || notFound.value) return
+  /**
+   * Background refresh. Asks for the version first — one row — and only pulls
+   * the whole game when it has actually moved. Most polls happen while nobody
+   * is adding rounds, so this is the difference between reading ~100 rows and
+   * reading 1. Stays quiet on failure so a blip does not disrupt play.
+   */
+  async function refresh(force = false): Promise<boolean> {
+    if (saving.value || notFound.value || loading.value) return false
     try {
+      if (!force) {
+        const { updatedAt } = await api.fetchGameVersion(gameId)
+        if (updatedAt === lastSeenVersion) return false
+      }
       apply(await api.fetchGame(gameId))
+      return true
     } catch {
       /* transient — the next poll will retry */
+      return false
     }
   }
 
@@ -64,6 +86,9 @@ export function useGame(gameId: string) {
     error.value = null
     try {
       rounds.value = [...rounds.value, await api.addRound(gameId, round)]
+      // Our write moved the server's version, so the next poll reconciles and
+      // picks up anything the others added meanwhile. Go back to fast polling.
+      quicken()
       return true
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Could not save that round.'
@@ -80,6 +105,7 @@ export function useGame(gameId: string) {
     saving.value = true
     try {
       await api.deleteRound(gameId, roundId)
+      quicken()
     } catch (err) {
       rounds.value = previous
       error.value = err instanceof Error ? err.message : 'Could not delete that round.'
@@ -92,18 +118,44 @@ export function useGame(gameId: string) {
     error.value = null
   }
 
-  const timer = window.setInterval(() => {
-    if (document.visibilityState === 'visible') void refresh()
-  }, POLL_INTERVAL_MS)
+  let pollDelay = MIN_POLL_MS
+  let pollTimer: number | undefined
+
+  function schedulePoll() {
+    window.clearTimeout(pollTimer)
+    pollTimer = window.setTimeout(poll, pollDelay)
+  }
+
+  /** Drop back to the fast cadence — something happened, more may follow. */
+  function quicken() {
+    pollDelay = MIN_POLL_MS
+    schedulePoll()
+  }
+
+  async function poll() {
+    if (document.visibilityState === 'visible') {
+      const changed = await refresh()
+      pollDelay = changed ? MIN_POLL_MS : Math.min(pollDelay * 2, MAX_POLL_MS)
+    } else {
+      // Hidden tab: no request, and no point waking often either. onVisible
+      // catches us up the moment it comes back.
+      pollDelay = MAX_POLL_MS
+    }
+    schedulePoll()
+  }
 
   // A sleeping phone misses polls entirely, so catch up on wake.
   function onVisible() {
-    if (document.visibilityState === 'visible') void refresh()
+    if (document.visibilityState !== 'visible') return
+    void refresh()
+    quicken()
   }
   document.addEventListener('visibilitychange', onVisible)
 
+  schedulePoll()
+
   onUnmounted(() => {
-    window.clearInterval(timer)
+    window.clearTimeout(pollTimer)
     document.removeEventListener('visibilitychange', onVisible)
   })
 

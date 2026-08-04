@@ -4,6 +4,7 @@ export interface GameData {
   id: string
   name: string | null
   createdAt: number
+  updatedAt: number
   seats: string[]
   rounds: Round[]
 }
@@ -47,6 +48,11 @@ export function createGame(players: string[]): Promise<{ id: string }> {
 
 export function fetchGame(gameId: string): Promise<GameData> {
   return request(`/api/games/${encodeURIComponent(gameId)}`)
+}
+
+/** Cheap poll target — reads one row instead of the whole game. */
+export function fetchGameVersion(gameId: string): Promise<{ updatedAt: number }> {
+  return request(`/api/games/${encodeURIComponent(gameId)}/version`)
 }
 
 export function addRound(gameId: string, round: Omit<Round, 'id'>): Promise<Round> {

@@ -57,6 +57,8 @@ export interface GamePayload {
   id: string
   name: string | null
   createdAt: number
+  /** Bumped on every write. Clients poll this to avoid refetching the game. */
+  updatedAt: number
   seats: string[]
   rounds: Array<{
     id: string
@@ -69,9 +71,9 @@ export interface GamePayload {
 /** Load a whole game — seats, rounds and entries — or null if it is missing. */
 export async function loadGame(db: D1Database, gameId: string): Promise<GamePayload | null> {
   const game = await db
-    .prepare('select id, name, created_at from games where id = ?')
+    .prepare('select id, name, created_at, updated_at from games where id = ?')
     .bind(gameId)
-    .first<{ id: string; name: string | null; created_at: number }>()
+    .first<{ id: string; name: string | null; created_at: number; updated_at: number }>()
 
   if (!game) return null
 
@@ -117,6 +119,7 @@ export async function loadGame(db: D1Database, gameId: string): Promise<GamePayl
     id: game.id,
     name: game.name,
     createdAt: game.created_at,
+    updatedAt: game.updated_at,
     seats,
     rounds: roundRows.results.map((round) => ({
       id: round.id,
