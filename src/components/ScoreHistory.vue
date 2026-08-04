@@ -139,6 +139,12 @@ defineExpose({ scrollToRound })
                       <span class="detail-name-text">{{ name }}</span>
                       <span v-if="round.declarer === index" class="chip-declarer">DECL</span>
                     </div>
+                    <div
+                      class="detail-score num"
+                      :class="signClass(perRound[order].scores[index])"
+                    >
+                      {{ formatScore(perRound[order].scores[index]) }}
+                    </div>
                     <div class="detail-line">Value {{ round.values[index] }}</div>
                     <div class="detail-line">Penalty {{ round.penalties[index] }}</div>
                     <div class="detail-total num">
@@ -313,6 +319,14 @@ table.history tbody td.detail-cell {
 .detail-name .chip-declarer {
   margin-left: 0;
   flex: none;
+}
+
+/* The round's own score — the reason for opening the panel, so it leads. */
+.detail-score {
+  font-size: 1.05rem;
+  font-weight: 600;
+  line-height: 1.2;
+  margin-bottom: 0.2rem;
 }
 
 .detail-line {
