@@ -24,7 +24,7 @@ const route = useRoute()
 .wrap {
   max-width: 920px;
   margin: 0 auto;
-  padding: 2.5rem 1.25rem 5rem;
+  padding: 1.5rem 1rem 3rem;
 }
 
 .app-header {
@@ -32,7 +32,7 @@ const route = useRoute()
   align-items: baseline;
   justify-content: space-between;
   gap: 1rem;
-  margin-bottom: 2rem;
+  margin-bottom: 1.5rem;
   flex-wrap: wrap;
 }
 
@@ -42,10 +42,24 @@ const route = useRoute()
 }
 
 .app-header h1 {
-  font-size: 1.7rem;
+  font-size: 1.45rem;
 }
 
 .app-header .eyebrow {
   margin: 0 0 0.3rem;
+}
+
+@media (min-width: 640px) {
+  .wrap {
+    padding: 2.5rem 1.25rem 5rem;
+  }
+
+  .app-header {
+    margin-bottom: 2rem;
+  }
+
+  .app-header h1 {
+    font-size: 1.7rem;
+  }
 }
 </style>

@@ -65,67 +65,60 @@ function submit() {
       <h3>Round {{ roundNumber }}</h3>
     </header>
 
-    <div class="entry-scroll">
-      <table class="entry-table">
-        <thead>
-          <tr>
-            <th>Declared</th>
-            <th v-for="(name, index) in players" :key="index">{{ name }}</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td class="hint-cell">
-              <template v-if="draft.declarer === null">
-                Mark who declared this round.
-              </template>
-              <template v-else>
-                <b>{{ players[draft.declarer] }}</b> declared this round.
-              </template>
-            </td>
-            <td v-for="(name, index) in players" :key="index">
-              <label class="declarer-radio">
-                <input
-                  type="radio"
-                  name="declarer"
-                  :checked="draft.declarer === index"
-                  :aria-label="`${name} declared`"
-                  @change="selectDeclarer(index)"
-                />
-              </label>
-            </td>
-          </tr>
+    <p class="entry-hint">
+      <template v-if="draft.declarer === null">Mark who declared this round.</template>
+      <template v-else><b>{{ players[draft.declarer] }}</b> declared this round.</template>
+    </p>
 
-          <tr>
-            <td class="row-label">Value</td>
-            <td v-for="(name, index) in players" :key="index">
-              <input
-                v-model="draft.values[index]"
-                type="number"
-                min="0"
-                step="1"
-                placeholder="0"
-                :aria-label="`${name} value`"
-              />
-            </td>
-          </tr>
+    <div class="entry-players">
+      <div
+        v-for="(name, index) in players"
+        :key="index"
+        class="player-entry"
+        :class="{ declared: draft.declarer === index }"
+      >
+        <div class="player-entry-head">
+          <span class="player-name">{{ name }}</span>
+          <label class="declarer-toggle">
+            <input
+              type="radio"
+              name="declarer"
+              :checked="draft.declarer === index"
+              :aria-label="`${name} declared`"
+              @change="selectDeclarer(index)"
+            />
+            <span>Declared</span>
+          </label>
+        </div>
 
-          <tr>
-            <td class="row-label">Penalty</td>
-            <td v-for="(name, index) in players" :key="index">
-              <input
-                v-model="draft.penalties[index]"
-                type="number"
-                min="0"
-                step="1"
-                placeholder="0"
-                :disabled="draft.declarer === index"
-                :aria-label="`${name} penalty`"
-              />
-            </td>
-          </tr>
-        </tbody>
-      </table>
+        <div class="player-entry-fields">
+          <label class="field">
+            <span class="field-label">Value</span>
+            <input
+              v-model="draft.values[index]"
+              type="number"
+              inputmode="numeric"
+              min="0"
+              step="1"
+              placeholder="0"
+              :aria-label="`${name} value`"
+            />
+          </label>
+          <label class="field">
+            <span class="field-label">Penalty</span>
+            <input
+              v-model="draft.penalties[index]"
+              type="number"
+              inputmode="numeric"
+              min="0"
+              step="1"
+              placeholder="0"
+              :disabled="draft.declarer === index"
+              :aria-label="`${name} penalty`"
+            />
+          </label>
+        </div>
+      </div>
     </div>
 
     <footer class="entry-foot">
@@ -147,105 +140,149 @@ function submit() {
   border: 1px solid var(--line);
   border-radius: 14px;
   box-shadow: var(--shadow);
-  padding: 1.25rem 1.25rem 1.4rem;
-  margin-bottom: 2rem;
+  padding: 1.1rem 1.1rem 1.25rem;
+  margin-bottom: 1.5rem;
 }
 
 .entry-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem;
 }
 
 .entry-head h3 {
   font-size: 1.02rem;
 }
 
-.entry-scroll {
-  overflow-x: auto;
-}
-
-.entry-table {
-  border-collapse: collapse;
-  width: 100%;
-  min-width: 420px;
-}
-
-.entry-table th {
-  text-align: left;
-  font-size: 0.7rem;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--muted);
-  font-weight: 600;
-  padding: 0 0.6rem 0.5rem 0;
-  white-space: nowrap;
-}
-
-.entry-table td {
-  padding: 0.3rem 0.6rem 0.3rem 0;
-  vertical-align: middle;
-}
-
-.hint-cell {
-  font-size: 0.78rem;
+.entry-hint {
+  font-size: 0.82rem;
   color: var(--muted);
   font-weight: 500;
-  max-width: 170px;
-  line-height: 1.3;
-  padding-right: 1rem;
+  line-height: 1.35;
+  margin: 0 0 1rem;
 }
 
-.hint-cell b {
+.entry-hint b {
   color: var(--gold);
   font-weight: 700;
 }
 
-.row-label {
+.entry-players {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-bottom: 1.1rem;
+}
+
+.player-entry {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 0.7rem 0.8rem;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.player-entry.declared {
+  border-color: var(--gold);
+  background: var(--gold-soft);
+}
+
+.player-entry-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  margin-bottom: 0.6rem;
+}
+
+.player-name {
   font-weight: 600;
-  padding-right: 1rem;
+  font-size: 0.92rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-input[type='number'] {
-  width: 68px;
-  padding: 0.4rem 0.5rem;
-  border-radius: 7px;
+.declarer-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--muted);
+  flex: none;
+  padding: 0.35rem 0.1rem;
+  cursor: pointer;
+}
+
+.player-entry.declared .declarer-toggle {
+  color: var(--gold);
+}
+
+.declarer-toggle input {
+  accent-color: var(--gold);
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+}
+
+.player-entry-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.field-label {
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.field input[type='number'] {
+  width: 100%;
+  padding: 0.6rem 0.65rem;
+  border-radius: 8px;
   border: 1px solid var(--line);
   background: var(--bg);
   color: var(--ink);
-  font-size: 0.92rem;
+  font-size: 1rem;
   font-family: inherit;
 }
 
-input[type='number']:disabled {
+.field input[type='number']:disabled {
   background: var(--surface-2);
   color: var(--muted);
 }
 
-.declarer-radio {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 34px;
-  height: 34px;
-  cursor: pointer;
-}
-
-.declarer-radio input {
-  accent-color: var(--gold);
-  width: 16px;
-  height: 16px;
-  cursor: pointer;
-}
-
 .entry-foot {
   display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  margin-top: 1.1rem;
-  gap: 1rem;
-  flex-wrap: wrap;
+}
+
+.entry-foot .btn {
+  width: 100%;
+}
+
+@media (min-width: 640px) {
+  .entry-players {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 0.75rem;
+  }
+
+  .entry-foot {
+    justify-content: flex-end;
+  }
+
+  .entry-foot .btn {
+    width: auto;
+  }
 }
 </style>

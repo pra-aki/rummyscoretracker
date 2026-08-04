@@ -70,9 +70,16 @@ function start() {
   border: 1px solid var(--line);
   border-radius: 16px;
   box-shadow: var(--shadow);
-  padding: 2.25rem;
+  padding: 1.5rem;
   max-width: 460px;
-  margin: 3rem auto 0;
+  margin: 0.5rem auto 0;
+}
+
+@media (min-width: 640px) {
+  .setup-card {
+    padding: 2.25rem;
+    margin: 3rem auto 0;
+  }
 }
 
 h2 {
@@ -101,12 +108,13 @@ h2 {
 select,
 input[type='text'] {
   width: 100%;
-  padding: 0.6rem 0.7rem;
+  padding: 0.65rem 0.7rem;
   border-radius: 8px;
   border: 1px solid var(--line);
   background: var(--bg);
   color: var(--ink);
-  font-size: 0.95rem;
+  /* 16px minimum stops iOS Safari auto-zooming the page on focus. */
+  font-size: 1rem;
   font-family: inherit;
 }
 
