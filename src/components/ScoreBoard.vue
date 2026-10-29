@@ -28,6 +28,7 @@ const wideColumns = computed(() => {
 <template>
   <div
     class="scoreboard"
+    :class="{ dense: phoneColumns === 4 }"
     :style="{ '--phone-cols': phoneColumns, '--wide-cols': wideColumns }"
   >
     <div
@@ -58,6 +59,9 @@ const wideColumns = computed(() => {
 }
 
 .score-card {
+  /* Sizes the total and lead chip to the card, not the screen. */
+  container-type: inline-size;
+  position: relative;
   min-width: 0;
   background: var(--surface);
   border: 1px solid var(--line);
@@ -98,7 +102,8 @@ const wideColumns = computed(() => {
 }
 
 .total {
-  font-size: 1.3rem;
+  /* Shrinks with the card, so a four-digit total fits four cards to a row. */
+  font-size: min(1.3rem, 24cqi);
   font-weight: 600;
   white-space: nowrap;
   overflow: hidden;
@@ -123,8 +128,27 @@ const wideColumns = computed(() => {
     margin-bottom: 0.45rem;
   }
 
+  .scoreboard.dense .score-card {
+    padding: 0.9rem 1rem;
+  }
+
   .total {
-    font-size: 1.5rem;
+    font-size: min(1.5rem, 24cqi);
+  }
+}
+
+/* Four cards to a row on a phone: tighter padding for more number room. */
+.scoreboard.dense .score-card {
+  padding: 0.55rem 0.45rem;
+}
+
+/* Too narrow for name and chip side by side: lift the chip onto the card's top
+   edge so the name keeps the full width. */
+@container (max-width: 75px) {
+  .crown {
+    position: absolute;
+    top: -0.45rem;
+    right: 0.3rem;
   }
 }
 </style>
