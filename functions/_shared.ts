@@ -65,6 +65,7 @@ export interface GamePayload {
     declarer: number
     values: number[]
     penalties: number[]
+    skipped: boolean[]
   }>
 }
 
@@ -90,22 +91,32 @@ export async function loadGame(db: D1Database, gameId: string): Promise<GamePayl
       .all<{ id: string; round_index: number; declarer: number }>(),
     db
       .prepare(
-        `select e.round_id, e.seat_index, e.value, e.penalty
+        `select e.round_id, e.seat_index, e.value, e.penalty, e.skipped
            from round_entries e
            join rounds r on r.id = e.round_id
           where r.game_id = ?`,
       )
       .bind(gameId)
-      .all<{ round_id: string; seat_index: number; value: number; penalty: number }>(),
+      .all<{
+        round_id: string
+        seat_index: number
+        value: number
+        penalty: number
+        skipped: number
+      }>(),
   ])
 
   const seats = seatRows.results.map((row) => row.display_name)
 
-  const byRound = new Map<string, { values: number[]; penalties: number[] }>()
+  const byRound = new Map<
+    string,
+    { values: number[]; penalties: number[]; skipped: boolean[] }
+  >()
   for (const round of roundRows.results) {
     byRound.set(round.id, {
       values: new Array(seats.length).fill(0),
       penalties: new Array(seats.length).fill(0),
+      skipped: new Array(seats.length).fill(false),
     })
   }
   for (const entry of entryRows.results) {
@@ -113,6 +124,7 @@ export async function loadGame(db: D1Database, gameId: string): Promise<GamePayl
     if (!slot || entry.seat_index >= seats.length) continue
     slot.values[entry.seat_index] = entry.value
     slot.penalties[entry.seat_index] = entry.penalty
+    slot.skipped[entry.seat_index] = entry.skipped === 1
   }
 
   return {
@@ -126,6 +138,7 @@ export async function loadGame(db: D1Database, gameId: string): Promise<GamePayl
       declarer: round.declarer,
       values: byRound.get(round.id)!.values,
       penalties: byRound.get(round.id)!.penalties,
+      skipped: byRound.get(round.id)!.skipped,
     })),
   }
 }

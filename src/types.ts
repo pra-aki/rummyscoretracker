@@ -8,6 +8,9 @@ export interface Round {
   values: number[]
   /** Per-seat penalty. The declarer's penalty is always 0. */
   penalties: number[]
+  /** Per-seat flag for players sitting this round out. A skipped player's
+   *  value and penalty are always 0, and they score 0 for the round. */
+  skipped: boolean[]
 }
 
 /** Derived scores for one round, plus the running totals after it. */
@@ -22,4 +25,5 @@ export interface RoundDraft {
   declarer: number | null
   values: string[]
   penalties: string[]
+  skipped: boolean[]
 }

@@ -7,6 +7,7 @@ const round = (over: Partial<Round> = {}): Round => ({
   declarer: 0,
   values: [0, 0, 0],
   penalties: [0, 0, 0],
+  skipped: [false, false, false],
   ...over,
 })
 
@@ -52,6 +53,35 @@ describe('computeRoundScores', () => {
     )
     // A pays an 8 penalty but is owed 3 and owes 1 → -8 + 2 = -6
     expect(scores).toEqual([-6, 6])
+  })
+
+  it('leaves a skipped player out of the value transfer', () => {
+    // Same as the worked example with a fourth player sitting out: their
+    // stray value must not leak into anyone else's score.
+    const scores = computeRoundScores(
+      round({
+        declarer: 2,
+        values: [2, 3, 1, 9],
+        penalties: [3, 5, 0, 4],
+        skipped: [false, false, false, true],
+      }),
+      4,
+    )
+    expect(scores).toEqual([-3, -2, 5, 0])
+  })
+
+  it('still sums to zero with a player skipped', () => {
+    const scores = computeRoundScores(
+      round({
+        declarer: 0,
+        values: [4, 0, 6],
+        penalties: [0, 0, 2],
+        skipped: [false, true, false],
+      }),
+      3,
+    )
+    expect(scores[1]).toBe(0)
+    expect(scores.reduce((a, b) => a + b, 0)).toBe(0)
   })
 })
 

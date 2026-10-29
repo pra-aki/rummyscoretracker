@@ -4,6 +4,7 @@ interface AddRoundBody {
   declarer?: unknown
   values?: unknown
   penalties?: unknown
+  skipped?: unknown
 }
 
 /** How many times to retry when another writer claims the same round number. */
@@ -44,12 +45,36 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, params, env }
     return fail(`values and penalties must each hold ${seats} entries.`)
   }
 
+  // Optional, so older clients that know nothing of skipping still work.
+  const skipped: boolean[] = new Array(seats).fill(false)
+  if (body.skipped !== undefined) {
+    if (
+      !Array.isArray(body.skipped) ||
+      body.skipped.length !== seats ||
+      !body.skipped.every((flag) => typeof flag === 'boolean')
+    ) {
+      return fail(`skipped must hold ${seats} true/false entries.`)
+    }
+    body.skipped.forEach((flag, seat) => {
+      skipped[seat] = flag
+    })
+  }
+
+  if (skipped[body.declarer]) {
+    return fail('The player who declared cannot be skipped.')
+  }
+  if (skipped.filter((flag) => !flag).length < 2) {
+    return fail('At least two players must play the round.')
+  }
+
   const values: number[] = []
   const penalties: number[] = []
   for (let seat = 0; seat < seats; seat++) {
-    const value = cleanPoints(body.values[seat])
+    // A skipped player sits the round out entirely.
+    const value = skipped[seat] ? 0 : cleanPoints(body.values[seat])
     // The declarer never carries a penalty of their own.
-    const penalty = seat === body.declarer ? 0 : cleanPoints(body.penalties[seat])
+    const penalty =
+      skipped[seat] || seat === body.declarer ? 0 : cleanPoints(body.penalties[seat])
     if (value === null || penalty === null) {
       return fail('Values and penalties must be whole numbers of zero or more.')
     }
@@ -78,13 +103,13 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, params, env }
         ).bind(roundId, gameId, roundIndex, body.declarer, now),
         ...values.map((value, seat) =>
           env.DB.prepare(
-            'insert into round_entries (round_id, seat_index, value, penalty) values (?, ?, ?, ?)',
-          ).bind(roundId, seat, value, penalties[seat]),
+            'insert into round_entries (round_id, seat_index, value, penalty, skipped) values (?, ?, ?, ?, ?)',
+          ).bind(roundId, seat, value, penalties[seat], skipped[seat] ? 1 : 0),
         ),
         env.DB.prepare('update games set updated_at = ? where id = ?').bind(now, gameId),
       ])
 
-      return json({ id: roundId, declarer: body.declarer, values, penalties }, 201)
+      return json({ id: roundId, declarer: body.declarer, values, penalties, skipped }, 201)
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
       const lostRace = message.includes('UNIQUE') || message.includes('constraint')

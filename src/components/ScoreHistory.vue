@@ -114,7 +114,12 @@ defineExpose({ scrollToRound })
               </td>
 
               <td v-for="(_, index) in players" :key="index">
-                <span class="cell-round num" :class="signClass(perRound[order].scores[index])">
+                <span v-if="round.skipped[index]" class="cell-skipped">Skipped</span>
+                <span
+                  v-else
+                  class="cell-round num"
+                  :class="signClass(perRound[order].scores[index])"
+                >
                   {{ formatScore(perRound[order].scores[index]) }}
                 </span>
               </td>
@@ -139,14 +144,17 @@ defineExpose({ scrollToRound })
                       <span class="detail-name-text">{{ name }}</span>
                       <span v-if="round.declarer === index" class="chip-declarer">DECL</span>
                     </div>
-                    <div
-                      class="detail-score num"
-                      :class="signClass(perRound[order].scores[index])"
-                    >
-                      {{ formatScore(perRound[order].scores[index]) }}
-                    </div>
-                    <div class="detail-line">Value {{ round.values[index] }}</div>
-                    <div class="detail-line">Penalty {{ round.penalties[index] }}</div>
+                    <div v-if="round.skipped[index]" class="detail-score zero">Skipped</div>
+                    <template v-else>
+                      <div
+                        class="detail-score num"
+                        :class="signClass(perRound[order].scores[index])"
+                      >
+                        {{ formatScore(perRound[order].scores[index]) }}
+                      </div>
+                      <div class="detail-line">Value {{ round.values[index] }}</div>
+                      <div class="detail-line">Penalty {{ round.penalties[index] }}</div>
+                    </template>
                     <div class="detail-total num">
                       total {{ formatScore(perRound[order].running[index]) }}
                     </div>
@@ -270,6 +278,13 @@ table.history tbody tr:last-child td {
 .cell-round {
   font-size: 0.95rem;
   font-weight: 600;
+}
+
+.cell-skipped {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--muted);
+  font-style: italic;
 }
 
 .row-actions {

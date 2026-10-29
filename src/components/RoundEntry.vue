@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { toNum } from '@/lib/scoring'
 import type { Round, RoundDraft } from '@/types'
 
@@ -16,6 +16,7 @@ function freshDraft(count: number): RoundDraft {
     declarer: null,
     values: Array.from({ length: count }, () => ''),
     penalties: Array.from({ length: count }, () => ''),
+    skipped: Array.from({ length: count }, () => false),
   }
 }
 
@@ -34,6 +35,22 @@ function selectDeclarer(index: number) {
   draft.value.penalties[index] = ''
 }
 
+// A skipped player sits the round out, so anything typed for them is dropped
+// and they cannot be the one who declared.
+function toggleSkip(index: number) {
+  const skipping = !draft.value.skipped[index]
+  draft.value.skipped[index] = skipping
+  if (!skipping) return
+  draft.value.values[index] = ''
+  draft.value.penalties[index] = ''
+  if (draft.value.declarer === index) draft.value.declarer = null
+}
+
+const activeCount = computed(() => draft.value.skipped.filter((flag) => !flag).length)
+const canSubmit = computed(
+  () => draft.value.declarer !== null && activeCount.value >= 2 && !props.busy,
+)
+
 // Set while our own submission is in flight, so the draft is cleared only when
 // that submission lands — not when polling picks up someone else's round, and
 // not if the save fails.
@@ -49,12 +66,13 @@ watch(
 )
 
 function submit() {
-  if (draft.value.declarer === null || props.busy) return
+  if (!canSubmit.value || draft.value.declarer === null) return
   awaitingOwnSave.value = true
   emit('add', {
     declarer: draft.value.declarer,
     values: draft.value.values.map(toNum),
     penalties: draft.value.penalties.map(toNum),
+    skipped: draft.value.skipped.slice(),
   })
 }
 </script>
@@ -66,7 +84,8 @@ function submit() {
     </header>
 
     <p class="entry-hint">
-      <template v-if="draft.declarer === null">Mark who declared this round.</template>
+      <template v-if="activeCount < 2">At least two players must play the round.</template>
+      <template v-else-if="draft.declarer === null">Mark who declared this round.</template>
       <template v-else><b>{{ players[draft.declarer] }}</b> declared this round.</template>
     </p>
 
@@ -75,20 +94,32 @@ function submit() {
         v-for="(name, index) in players"
         :key="index"
         class="player-entry"
-        :class="{ declared: draft.declarer === index }"
+        :class="{ declared: draft.declarer === index, skipped: draft.skipped[index] }"
       >
         <div class="player-entry-head">
           <span class="player-name">{{ name }}</span>
-          <label class="declarer-toggle">
-            <input
-              type="radio"
-              name="declarer"
-              :checked="draft.declarer === index"
-              :aria-label="`${name} declared`"
-              @change="selectDeclarer(index)"
-            />
-            <span>Declared</span>
-          </label>
+          <div class="player-toggles">
+            <label class="toggle skip-toggle">
+              <input
+                type="checkbox"
+                :checked="draft.skipped[index]"
+                :aria-label="`Skip ${name} this round`"
+                @change="toggleSkip(index)"
+              />
+              <span>Skip</span>
+            </label>
+            <label class="toggle declarer-toggle">
+              <input
+                type="radio"
+                name="declarer"
+                :checked="draft.declarer === index"
+                :disabled="draft.skipped[index]"
+                :aria-label="`${name} declared`"
+                @change="selectDeclarer(index)"
+              />
+              <span>Declared</span>
+            </label>
+          </div>
         </div>
 
         <div class="player-entry-fields">
@@ -101,6 +132,7 @@ function submit() {
               min="0"
               step="1"
               placeholder="0"
+              :disabled="draft.skipped[index]"
               :aria-label="`${name} value`"
             />
           </label>
@@ -113,7 +145,7 @@ function submit() {
               min="0"
               step="1"
               placeholder="0"
-              :disabled="draft.declarer === index"
+              :disabled="draft.declarer === index || draft.skipped[index]"
               :aria-label="`${name} penalty`"
             />
           </label>
@@ -125,7 +157,7 @@ function submit() {
       <button
         class="btn btn-primary"
         type="button"
-        :disabled="draft.declarer === null || busy"
+        :disabled="!canSubmit"
         @click="submit"
       >
         {{ busy ? 'Saving…' : 'Add round' }}
@@ -195,6 +227,15 @@ function submit() {
   margin-bottom: 0.6rem;
 }
 
+.player-entry.skipped {
+  border-style: dashed;
+  background: var(--surface-2);
+}
+
+.player-entry.skipped .player-name {
+  color: var(--muted);
+}
+
 .player-name {
   font-weight: 600;
   font-size: 0.92rem;
@@ -203,7 +244,14 @@ function submit() {
   white-space: nowrap;
 }
 
-.declarer-toggle {
+.player-toggles {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex: none;
+}
+
+.toggle {
   display: flex;
   align-items: center;
   gap: 0.4rem;
@@ -219,11 +267,22 @@ function submit() {
   color: var(--gold);
 }
 
-.declarer-toggle input {
-  accent-color: var(--gold);
+.toggle input {
   width: 20px;
   height: 20px;
   cursor: pointer;
+}
+
+.toggle input:disabled {
+  cursor: not-allowed;
+}
+
+.declarer-toggle input {
+  accent-color: var(--gold);
+}
+
+.skip-toggle input {
+  accent-color: var(--muted);
 }
 
 .player-entry-fields {

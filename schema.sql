@@ -36,6 +36,8 @@ create table if not exists round_entries (
   seat_index integer not null,
   value      integer not null default 0,
   penalty    integer not null default 0,
+  -- 1 when the player sat this round out. Their value and penalty are 0.
+  skipped    integer not null default 0,
   primary key (round_id, seat_index)
 );
 

@@ -9,24 +9,36 @@ import type { Round, RoundResult } from '@/types'
  *    collects the sum of all of them.
  * 2. Values — each player receives their own value from every other player and
  *    pays every other player's value. Netted out, that is
- *    `value[i] * playerCount - sumOfAllValues`.
+ *    `value[i] * activeCount - sumOfActiveValues`.
+ *
+ * Skipped players sit the round out: they take no part in either transfer and
+ * score 0.
  *
  * The returned scores always sum to zero: points only move between players.
  */
 export function computeRoundScores(round: Round, playerCount: number): number[] {
+  const isActive = (i: number) => !round.skipped?.[i]
+
+  let activeCount = 0
   let totalValue = 0
   let nonDeclarerPenaltySum = 0
 
   for (let i = 0; i < playerCount; i++) {
+    if (!isActive(i)) continue
+    activeCount++
     totalValue += round.values[i] ?? 0
     if (i !== round.declarer) nonDeclarerPenaltySum += round.penalties[i] ?? 0
   }
 
   const scores: number[] = []
   for (let i = 0; i < playerCount; i++) {
+    if (!isActive(i)) {
+      scores.push(0)
+      continue
+    }
     const penaltyTransfer =
       i === round.declarer ? nonDeclarerPenaltySum : -(round.penalties[i] ?? 0)
-    const valueTransfer = (round.values[i] ?? 0) * playerCount - totalValue
+    const valueTransfer = (round.values[i] ?? 0) * activeCount - totalValue
     scores.push(penaltyTransfer + valueTransfer)
   }
   return scores
