@@ -72,6 +72,7 @@ async function confirmDelete() {
     <RoundEntry
       :players="players"
       :round-number="rounds.length + 1"
+      :previous-skipped="rounds.at(-1)?.skipped"
       :busy="saving"
       @add="submitRound"
     />

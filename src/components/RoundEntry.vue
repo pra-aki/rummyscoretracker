@@ -6,17 +6,22 @@ import type { Round, RoundDraft } from '@/types'
 const props = defineProps<{
   players: string[]
   roundNumber: number
+  /** Who sat out the last recorded round. They stay skipped until unticked. */
+  previousSkipped?: boolean[]
   busy?: boolean
 }>()
 
 const emit = defineEmits<{ add: [round: Omit<Round, 'id'>] }>()
 
 function freshDraft(count: number): RoundDraft {
+  const skipped = Array.from({ length: count }, (_, i) => props.previousSkipped?.[i] ?? false)
+  // Never carry over a state that cannot be submitted.
+  const carry = skipped.filter((flag) => !flag).length >= 2
   return {
     declarer: null,
     values: Array.from({ length: count }, () => ''),
     penalties: Array.from({ length: count }, () => ''),
-    skipped: Array.from({ length: count }, () => false),
+    skipped: carry ? skipped : skipped.map(() => false),
   }
 }
 
