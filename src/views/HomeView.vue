@@ -8,11 +8,11 @@ const router = useRouter()
 const creating = ref(false)
 const error = ref<string | null>(null)
 
-async function start(names: string[]) {
+async function start(names: string[], startingTotals?: number[]) {
   creating.value = true
   error.value = null
   try {
-    const { id } = await createGame(names)
+    const { id } = await createGame(names, startingTotals)
     await router.push({ name: 'game', params: { id } })
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Could not start the game.'

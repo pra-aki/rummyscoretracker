@@ -226,9 +226,10 @@ function submit() {
 
 .player-entry-head {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 0.6rem;
+  gap: 0.2rem 0.6rem;
   margin-bottom: 0.6rem;
 }
 
@@ -241,7 +242,11 @@ function submit() {
   color: var(--muted);
 }
 
+/* Won't shrink, so in a narrow card the toggles wrap below the name rather
+   than squeezing it out; max-width still lets a very long name ellipsize. */
 .player-name {
+  flex: 1 0 auto;
+  max-width: 100%;
   font-weight: 600;
   font-size: 0.92rem;
   overflow: hidden;

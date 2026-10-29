@@ -60,6 +60,8 @@ export interface GamePayload {
   /** Bumped on every write. Clients poll this to avoid refetching the game. */
   updatedAt: number
   seats: string[]
+  /** Per-seat score carried in from before the game was tracked here. */
+  startingTotals: number[]
   rounds: Array<{
     id: string
     declarer: number
@@ -80,9 +82,11 @@ export async function loadGame(db: D1Database, gameId: string): Promise<GamePayl
 
   const [seatRows, roundRows, entryRows] = await Promise.all([
     db
-      .prepare('select seat_index, display_name from seats where game_id = ? order by seat_index')
+      .prepare(
+        'select seat_index, display_name, starting_total from seats where game_id = ? order by seat_index',
+      )
       .bind(gameId)
-      .all<{ seat_index: number; display_name: string }>(),
+      .all<{ seat_index: number; display_name: string; starting_total: number }>(),
     db
       .prepare(
         'select id, round_index, declarer from rounds where game_id = ? order by round_index',
@@ -133,6 +137,7 @@ export async function loadGame(db: D1Database, gameId: string): Promise<GamePayl
     createdAt: game.created_at,
     updatedAt: game.updated_at,
     seats,
+    startingTotals: seatRows.results.map((row) => row.starting_total),
     rounds: roundRows.results.map((round) => ({
       id: round.id,
       declarer: round.declarer,

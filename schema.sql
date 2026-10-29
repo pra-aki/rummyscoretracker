@@ -17,6 +17,8 @@ create table if not exists seats (
   game_id      text    not null references games(id) on delete cascade,
   seat_index   integer not null,
   display_name text    not null,
+  -- Score carried in from before the game was tracked here. Can be negative.
+  starting_total integer not null default 0,
   primary key (game_id, seat_index)
 );
 

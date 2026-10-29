@@ -1,15 +1,20 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import { toNum } from '@/lib/scoring'
 
 const props = defineProps<{ busy?: boolean; error?: string | null }>()
 
-const emit = defineEmits<{ start: [names: string[]] }>()
+const emit = defineEmits<{ start: [names: string[], startingTotals?: number[]] }>()
 
 const MIN_PLAYERS = 2
 const MAX_PLAYERS = 8
 
 const count = ref(3)
 const names = ref<string[]>(Array.from({ length: count.value }, () => ''))
+
+/** For picking up a game already under way: each player's score so far. */
+const withTotals = ref(false)
+const totals = ref<string[]>(Array.from({ length: count.value }, () => ''))
 
 const options = Array.from(
   { length: MAX_PLAYERS - MIN_PLAYERS + 1 },
@@ -20,13 +25,14 @@ const options = Array.from(
 watch(count, (next) => {
   const resized = Array.from({ length: next }, (_, i) => names.value[i] ?? '')
   names.value = resized
+  totals.value = Array.from({ length: next }, (_, i) => totals.value[i] ?? '')
 })
 
 const ready = computed(() => names.value.every((name) => name.trim().length > 0))
 
 function start() {
   if (!ready.value || props.busy) return
-  emit('start', names.value)
+  emit('start', names.value, withTotals.value ? totals.value.map(toNum) : undefined)
 }
 </script>
 
@@ -43,6 +49,11 @@ function start() {
         </select>
       </div>
 
+      <label class="totals-toggle">
+        <input v-model="withTotals" type="checkbox" />
+        <span>Add existing scores</span>
+      </label>
+
       <div class="name-grid">
         <div v-for="(_, index) in names" :key="index" class="name-row">
           <span class="swatch" aria-hidden="true"></span>
@@ -51,6 +62,17 @@ function start() {
             type="text"
             :placeholder="`Player ${index + 1} name`"
             :aria-label="`Player ${index + 1} name`"
+          />
+          <!-- No inputmode: iOS's numeric keypad has no minus key, and totals
+               can be negative. -->
+          <input
+            v-if="withTotals"
+            v-model="totals[index]"
+            class="total-input"
+            type="number"
+            step="1"
+            placeholder="0"
+            :aria-label="`Player ${index + 1} existing score`"
           />
         </div>
       </div>
@@ -106,7 +128,8 @@ h2 {
 }
 
 select,
-input[type='text'] {
+input[type='text'],
+input[type='number'] {
   width: 100%;
   padding: 0.65rem 0.7rem;
   border-radius: 8px;
@@ -139,8 +162,33 @@ input[type='text'] {
   flex: none;
 }
 
-.name-row input {
+.name-row input[type='text'] {
   flex: 1;
+  min-width: 0;
+}
+
+.name-row .total-input {
+  flex: none;
+  width: 5.5rem;
+  text-align: right;
+}
+
+.totals-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--muted);
+  margin-bottom: 0.9rem;
+  cursor: pointer;
+}
+
+.totals-toggle input {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--accent);
+  cursor: pointer;
 }
 
 .start {

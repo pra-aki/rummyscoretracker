@@ -45,14 +45,15 @@ export function computeRoundScores(round: Round, playerCount: number): number[] 
 }
 
 /**
- * Score every round in order, carrying running totals forward.
- * Returns the per-round breakdown and the final totals.
+ * Score every round in order, carrying running totals forward from each
+ * player's starting total. Returns the per-round breakdown and the final totals.
  */
 export function computeGame(
   rounds: readonly Round[],
   playerCount: number,
+  startingTotals: readonly number[] = [],
 ): { perRound: RoundResult[]; totals: number[] } {
-  const running = new Array<number>(playerCount).fill(0)
+  const running = Array.from({ length: playerCount }, (_, i) => startingTotals[i] ?? 0)
 
   const perRound = rounds.map((round) => {
     const scores = computeRoundScores(round, playerCount)

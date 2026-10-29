@@ -1,5 +1,6 @@
 import {
   MAX_NAME_LEN,
+  MAX_POINTS,
   MAX_PLAYERS,
   MIN_PLAYERS,
   fail,
@@ -12,6 +13,7 @@ import {
 interface CreateBody {
   name?: unknown
   players?: unknown
+  startingTotals?: unknown
 }
 
 /** POST /api/games — create a game and return its id. */
@@ -31,6 +33,22 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
     seats.push(name.slice(0, MAX_NAME_LEN))
   }
 
+  // Optional: scores carried in from a game already under way. Unlike round
+  // points these can be negative, since totals go below zero.
+  const startingTotals: number[] = new Array(seats.length).fill(0)
+  if (body.startingTotals !== undefined) {
+    if (!Array.isArray(body.startingTotals) || body.startingTotals.length !== seats.length) {
+      return fail(`startingTotals must hold ${seats.length} entries.`)
+    }
+    for (let seat = 0; seat < seats.length; seat++) {
+      const n = Number(body.startingTotals[seat])
+      if (!Number.isFinite(n) || Math.abs(n) > MAX_POINTS) {
+        return fail('Existing scores must be whole numbers.')
+      }
+      startingTotals[seat] = Math.round(n)
+    }
+  }
+
   const name =
     typeof body.name === 'string' && body.name.trim()
       ? body.name.trim().slice(0, MAX_NAME_LEN)
@@ -45,8 +63,8 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
     ).bind(id, name, now, now),
     ...seats.map((displayName, index) =>
       env.DB.prepare(
-        'insert into seats (game_id, seat_index, display_name) values (?, ?, ?)',
-      ).bind(id, index, displayName),
+        'insert into seats (game_id, seat_index, display_name, starting_total) values (?, ?, ?, ?)',
+      ).bind(id, index, displayName, startingTotals[index]),
     ),
   ])
 

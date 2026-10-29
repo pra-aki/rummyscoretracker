@@ -101,6 +101,17 @@ describe('computeGame', () => {
     expect(totals).toEqual([7, -6, -1])
   })
 
+  it('starts from each player’s existing total', () => {
+    const { perRound, totals } = computeGame(
+      [round({ declarer: 0, values: [0, 0, 0], penalties: [0, 4, 6] })],
+      3,
+      [20, -5, -15],
+    )
+    expect(perRound[0].running).toEqual([30, -9, -21])
+    expect(totals).toEqual([30, -9, -21])
+    expect(computeGame([], 3, [20, -5, -15]).totals).toEqual([20, -5, -15])
+  })
+
   it('returns zeroed totals for a game with no rounds', () => {
     expect(computeGame([], 4).totals).toEqual([0, 0, 0, 0])
   })

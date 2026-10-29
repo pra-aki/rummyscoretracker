@@ -20,6 +20,7 @@ const MAX_POLL_MS = 30000
 export function useGame(gameId: string) {
   const players = ref<string[]>([])
   const rounds = ref<Round[]>([])
+  const startingTotals = ref<number[]>([])
 
   const loading = ref(true)
   const saving = ref(false)
@@ -27,13 +28,15 @@ export function useGame(gameId: string) {
   const notFound = ref(false)
 
   const playerCount = computed(() => players.value.length)
-  const game = computed(() => computeGame(rounds.value, playerCount.value))
+  const game = computed(() =>
+    computeGame(rounds.value, playerCount.value, startingTotals.value),
+  )
   const totals = computed(() => game.value.totals)
   const perRound = computed(() => game.value.perRound)
 
-  /** Highest total, or null before any round is played. */
+  /** Highest total, or null while nobody has scored. */
   const leadingTotal = computed(() => {
-    if (rounds.value.length === 0) return null
+    if (playerCount.value === 0) return null
     const max = Math.max(...totals.value)
     return max === 0 ? null : max
   })
@@ -43,6 +46,7 @@ export function useGame(gameId: string) {
 
   function apply(data: api.GameData) {
     players.value = data.seats
+    startingTotals.value = data.startingTotals ?? []
     rounds.value = data.rounds
     lastSeenVersion = data.updatedAt
   }

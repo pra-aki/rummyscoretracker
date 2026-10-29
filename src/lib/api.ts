@@ -6,6 +6,7 @@ export interface GameData {
   createdAt: number
   updatedAt: number
   seats: string[]
+  startingTotals: number[]
   rounds: Round[]
 }
 
@@ -39,10 +40,13 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return (await response.json()) as T
 }
 
-export function createGame(players: string[]): Promise<{ id: string }> {
+export function createGame(
+  players: string[],
+  startingTotals?: number[],
+): Promise<{ id: string }> {
   return request('/api/games', {
     method: 'POST',
-    body: JSON.stringify({ players }),
+    body: JSON.stringify({ players, startingTotals }),
   })
 }
 

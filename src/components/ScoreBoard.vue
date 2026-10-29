@@ -1,15 +1,35 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { formatScore, signClass } from '@/lib/scoring'
 
-defineProps<{
+const props = defineProps<{
   players: string[]
   totals: number[]
   leadingTotal: number | null
 }>()
+
+/**
+ * Columns on a phone. Up to three players share one row; beyond that the cards
+ * split evenly over two rows (four per row at most), so 5–6 players take two
+ * lines instead of three.
+ */
+const phoneColumns = computed(() => {
+  const n = props.players.length
+  return n <= 3 ? n : Math.min(Math.ceil(n / 2), 4)
+})
+
+/** Wider screens fit up to six on one line; seven or eight split over two. */
+const wideColumns = computed(() => {
+  const n = props.players.length
+  return n <= 6 ? n : Math.ceil(n / 2)
+})
 </script>
 
 <template>
-  <div class="scoreboard">
+  <div
+    class="scoreboard"
+    :style="{ '--phone-cols': phoneColumns, '--wide-cols': wideColumns }"
+  >
     <div
       v-for="(name, index) in players"
       :key="index"
@@ -32,16 +52,17 @@ defineProps<{
 <style scoped>
 .scoreboard {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 0.75rem;
-  margin-bottom: 1.75rem;
+  grid-template-columns: repeat(var(--phone-cols), minmax(0, 1fr));
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
 }
 
 .score-card {
+  min-width: 0;
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 12px;
-  padding: 1rem 1.1rem;
+  padding: 0.65rem 0.7rem;
   box-shadow: var(--shadow);
   transition: border-color 0.15s;
 }
@@ -51,12 +72,12 @@ defineProps<{
 }
 
 .name {
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   font-weight: 600;
   display: flex;
   align-items: center;
-  gap: 0.4rem;
-  margin-bottom: 0.5rem;
+  gap: 0.3rem;
+  margin-bottom: 0.3rem;
 }
 
 .name .label {
@@ -66,18 +87,44 @@ defineProps<{
 }
 
 .crown {
-  font-size: 0.7rem;
+  font-size: 0.58rem;
   background: var(--gold-soft);
   color: var(--gold);
   border-radius: 5px;
-  padding: 0.1rem 0.4rem;
+  padding: 0.1rem 0.3rem;
   font-weight: 700;
   letter-spacing: 0.03em;
   flex: none;
 }
 
 .total {
-  font-size: 1.6rem;
+  font-size: 1.3rem;
   font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Wider screens: one line for up to six players. Below ~860px six cards on
+   one line would truncate four-digit totals. */
+@media (min-width: 860px) {
+  .scoreboard {
+    grid-template-columns: repeat(var(--wide-cols), minmax(0, 1fr));
+    gap: 0.75rem;
+    margin-bottom: 1.75rem;
+  }
+
+  .score-card {
+    padding: 0.9rem 1rem;
+  }
+
+  .name {
+    font-size: 0.85rem;
+    margin-bottom: 0.45rem;
+  }
+
+  .total {
+    font-size: 1.5rem;
+  }
 }
 </style>
