@@ -192,6 +192,10 @@ defineExpose({ scrollToRound })
  * appears on exactly the side that has more content, and fades at each end.
  */
 .history-scroll {
+  /* Contains absolutely positioned descendants (the sr-only header label).
+     Without it they escape the scroll clip and widen the whole page, which
+     with 7+ players lets the screen slide sideways. */
+  position: relative;
   overflow-x: auto;
   border: 1px solid var(--line);
   border-radius: 14px;
